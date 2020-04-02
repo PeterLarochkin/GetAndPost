@@ -13,83 +13,111 @@ import CoreLocation
 
 
 
-class ViewController: UIViewController, CLLocationManagerDelegate {
+class ViewController: UIViewController, CLLocationManagerDelegate, UIGestureRecognizerDelegate {
     
-    private var wheatherConditionLabel: UILabel = {
-        let label = UILabel()
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.textAlignment = .center
-        label.font = .italicSystemFont(ofSize: 17)
-        
-        label.numberOfLines = 3
-        return label
-    }()
-    
-    
+    private var json = JSON()
     private var wheatherCondition: String = ""
     private var locationManager = CLLocationManager()
     private var cityName: String = ""
     private var date: String = ""
     private var temp: String = ""
-    private var lat: String = ""
-    private var lon: String = ""
+    private var lat: CLLocationDegrees = 0
+    private var lon: CLLocationDegrees = 0
     
+    private var mapView: MKMapView = {
+        let map = MKMapView()
+        //map.translatesAutoresizingMaskIntoConstraints = false
+        
+        return map
+    }()
+    private func configureMap(){
+        //        NSLayoutConstraint.activate([
+        //            mapView.widthAnchor.constraint(equalTo: wheatherConditionLabel.widthAnchor),
+        //            mapView.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor),
+        //            mapView.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor),
+        //            mapView.heightAnchor.constraint(equalToConstant: 2 / 3 * UIScreen.main.bounds.height)
+        //        ])
+        mapView.frame = CGRect(x: 0, y: 1 / 7 * UIScreen.main.bounds.height, width: UIScreen.main.bounds.width, height: 5 / 7 * UIScreen.main.bounds.height)
+    }
+    
+    private var wheatherConditionLabel: UILabel = {
+        let label = UILabel()
+        //        label.translatesAutoresizingMaskIntoConstraints = false
+        label.textAlignment = .center
+        label.font = .italicSystemFont(ofSize: 17)
+        label.numberOfLines = 11
+        label.text = "Узнать погоду в любой точке планеты :)"
+        return label
+    }()
+    
+    private func configureLabel(){
+        //        NSLayoutConstraint.activate([
+        //            wheatherConditionLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16.0),
+        //            wheatherConditionLabel.bottomAnchor.constraint(equalTo: mapView.topAnchor, constant: -16.0),
+        //            wheatherConditionLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16.0),
+        //            wheatherConditionLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16.0)
+        //        ])
+        wheatherConditionLabel.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 1 / 7 * UIScreen.main.bounds.height)
+    }
     
     private var buttonGet: UIButton = {
         let button = UIButton()
         button.backgroundColor = .systemYellow
-        button.addTarget(self, action: #selector(tappedGet), for: .touchUpInside)
-        button.setTitle("Get", for: .normal)
-        button.translatesAutoresizingMaskIntoConstraints = false
-    
+        button.addTarget(self, action: #selector(tappedGetFullInformation), for: .touchUpInside)
+        button.setTitle("Развернуть", for: .normal)
+        //        button.translatesAutoresizingMaskIntoConstraints = false
+        button.isEnabled = false
         return button
     }()
     
+    private func configureButtonGet(){
+        //        NSLayoutConstraint.activate([
+        //            buttonGet.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,constant:  -16.0),
+        //            buttonGet.widthAnchor.constraint(equalTo: wheatherConditionLabel.widthAnchor),
+        //            buttonGet.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor, constant:  0.0),
+        //            //buttonGet.topAnchor.constraint(equalTo: mapView.bottomAnchor, constant: 16.0)
+        //            buttonGet.heightAnchor.constraint(equalToConstant: 31.0)
+        //        ])
+        buttonGet.frame = CGRect(x: UIScreen.main.bounds.width / 2, y: 6 / 7 * UIScreen.main.bounds.height, width: UIScreen.main.bounds.width / 2, height: 1 / 7 * UIScreen.main.bounds.height)
+    }
     
-    private var buttonPost: UIButton = {
+    
+    private var buttonWhereI: UIButton = {
         let button = UIButton()
-        button.backgroundColor = .blue
-        button.addTarget(self, action: #selector(tappedPost), for: .touchUpInside)
-        button.setTitle("Post", for: .normal)
-        button.translatesAutoresizingMaskIntoConstraints = false
+        button.backgroundColor = .systemBlue
+        button.addTarget(self, action: #selector(tappedWhereI), for: .touchUpInside)
+        button.setTitle("Где Я?", for: .normal)
+        //        button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
     
-    private func configureButtons(){
-        NSLayoutConstraint.activate([
-            buttonGet.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,constant:  -16.0),
-            buttonGet.widthAnchor.constraint(equalTo: wheatherConditionLabel.widthAnchor),
-            buttonGet.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor, constant:  0.0),
-            
-            
-//            buttonPost.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -UIScreen.main.bounds.width / 5),
-//            buttonPost.widthAnchor.constraint(equalToConstant: UIScreen.main.bounds.width / 4),
-//            buttonPost.centerYAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerYAnchor,constant:  0.0)
-            
-        ])
+    private func configureButtonWhereI(){
+        //        NSLayoutConstraint.activate([
+        //            buttonGet.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,constant:  -16.0),
+        //            buttonGet.widthAnchor.constraint(equalTo: wheatherConditionLabel.widthAnchor),
+        //            buttonGet.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor, constant:  0.0),
+        //            //buttonGet.topAnchor.constraint(equalTo: mapView.bottomAnchor, constant: 16.0)
+        //            buttonGet.heightAnchor.constraint(equalToConstant: 31.0)
+        //        ])
+        buttonWhereI.frame = CGRect(x: 0, y: 6 / 7 * UIScreen.main.bounds.height, width: UIScreen.main.bounds.width / 2, height: 1 / 7 * UIScreen.main.bounds.height)
     }
     
-    private func configureLabel(){
-        NSLayoutConstraint.activate([
-            wheatherConditionLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16.0),
-            wheatherConditionLabel.bottomAnchor.constraint(equalTo: buttonGet.topAnchor, constant: -16.0),
-            wheatherConditionLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16.0),
-            wheatherConditionLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16.0)
-        ])
-        
-    }
-    
-    private func addButtons(){
+    private func addButton(){
         //view.addSubview(buttonPost)
         view.addSubview(buttonGet)
+        view.addSubview(buttonWhereI)
     }
     
     private func addLabel(){
         view.addSubview(wheatherConditionLabel)
     }
     
+    private func addMap(){
+        view.addSubview(mapView)
+    }
     
-    func getData(coordinates: (String,String)){
+    
+    func setDataOnLabel(coordinates: (CLLocationDegrees, CLLocationDegrees)){
         // Create URL
         let url = URL(string: "https://api.weather.yandex.ru/v1/forecast?lat="+"\(coordinates.0)&lon="+"\(coordinates.1)&extra=false")
         guard let requestUrl = url else { fatalError() }
@@ -115,113 +143,159 @@ class ViewController: UIViewController, CLLocationManagerDelegate {
             
             // Convert HTTP Response Data to a simple String
             if let data = data, let dataString = String(data: data, encoding: .utf8) {
-                print("Response data string:\n \(dataString)")
+                //print("Response data string:\n \(dataString)")
                 self.wheatherCondition = dataString
-                let json = JSON(data)
+                self.json = JSON(data)
                 print("_______")
-                print(json["now"].intValue)
-                print(data.self)
+                print(self.json["now"].intValue)
+                //print(data.self)
                 print("_______")
                 print("Где?")
                 //self.cityName = json["info"]["tzinfo"]["name"].stringValue
                 print(self.cityName)
                 print("Когда?")
-                self.date = json["now_dt"].stringValue
+                self.date = self.json["now_dt"].stringValue
                 print(self.date)
                 print("Сколько градусов?")
-                self.temp = json["fact"]["temp"].stringValue
+                self.temp = self.json["fact"]["temp"].stringValue
                 print(self.temp)
             }
             DispatchQueue.main.async {
                 
-                self.wheatherConditionLabel.text  = "ГДЕ? : \(self.cityName)" + "\n КОГДА? : \(self.date)" + "\n СКОЛЬКО ГРАДУСОВ? : \(self.temp)"
+                self.wheatherConditionLabel.text  = "Город: \(self.cityName)" + "\nВремя: \(self.date)" + "\nТемпература: \(self.temp)"
+                //                print(self.wheatherCondition)
             }
         }
         task.resume()
         
     }
     
+    var status = true
     
-    @objc func tappedGet() {
+    
+    @objc func tappedGetFullInformation() {
         
-        getData(coordinates: self.getLocale())
-        
-        
+        status = !status
+        if status {
+            UIView.animate(withDuration: 0.3, animations: {
+                
+                self.mapView.frame = CGRect(x: UIScreen.main.bounds.width, y: 1 / 7 * UIScreen.main.bounds.height, width: UIScreen.main.bounds.width, height: 5 / 7 * UIScreen.main.bounds.height)
+                self.wheatherConditionLabel.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 6 / 7 * UIScreen.main.bounds.height)
+                self.buttonWhereI.frame = CGRect(x: 0, y: UIScreen.main.bounds.height, width: UIScreen.main.bounds.width / 2, height: 1 / 7 * UIScreen.main.bounds.height)
+                self.buttonGet.frame = CGRect(x: 0, y: 6 / 7 * UIScreen.main.bounds.height, width: UIScreen.main.bounds.width, height: 1 / 7 * UIScreen.main.bounds.height)
+                
+                
+                
+                let condition = self.json["fact"]["condition"].stringValue
+                let windSpeed = self.json["fact"]["wind_speed"].stringValue
+                let pressure = self.json["fact"]["pressure_mm"].stringValue
+                let nightTemp = self.json["forecasts"].arrayValue[0]["parts"]["night"]["temp_avg"].stringValue
+                let morningTemp = self.json["forecasts"].arrayValue[0]["parts"]["morning"]["temp_avg"].stringValue
+                let dayTemp = self.json["forecasts"].arrayValue[0]["parts"]["day"]["temp_avg"].stringValue
+                let eveningTemp = self.json["forecasts"].arrayValue[0]["parts"]["evening"]["temp_avg"].stringValue
+                
+                self.wheatherConditionLabel.text = self.wheatherConditionLabel.text! + "\n Состояние: " + condition +
+                    "\n Скорость ветра(в м/с):  " + windSpeed + "\n Давление(в мм):  " + pressure + "\n Прогноз:" + "\n Ночью: " + nightTemp + "\n Утром: " + morningTemp +
+                    "\n Днем: " + dayTemp + "\n Вечером: " + eveningTemp
+                print(self.wheatherConditionLabel.text!)
+                self.buttonGet.setTitle("Свернуть", for: .normal)
+                self.view.layoutIfNeeded()
+            })
+            
+        }else{
+            UIView.animate(withDuration: 0.3, animations: {
+                self.mapView.frame = CGRect(x: 0, y: 1 / 7 * UIScreen.main.bounds.height, width: UIScreen.main.bounds.width, height: 5 / 7 * UIScreen.main.bounds.height)
+                self.wheatherConditionLabel.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width , height: 1 / 7 * UIScreen.main.bounds.height)
+                self.buttonWhereI.frame = CGRect(x: 0, y: 6 / 7 * UIScreen.main.bounds.height, width: UIScreen.main.bounds.width / 2, height: 1 / 7 * UIScreen.main.bounds.height)
+                self.buttonGet.frame = CGRect(x: UIScreen.main.bounds.width / 2, y: 6 / 7 * UIScreen.main.bounds.height, width: UIScreen.main.bounds.width / 2, height: 1 / 7 * UIScreen.main.bounds.height)
+                self.wheatherConditionLabel.text = "Город : \(self.cityName)" + "\n Время : \(self.date)" + "\n Температура : \(self.temp)"
+                self.buttonGet.setTitle("Развернуть", for: .normal)
+                self.view.layoutIfNeeded()
+            })
+        }
     }
     
-    private func getLocale()->(String,String){
+    
+    
+    
+    private func getLocale(coord: (CLLocationDegrees,CLLocationDegrees)){
         print("______")
-        return (lat, lon)
         
-    }
-    
-    // MARK: didn't use
-    @objc func tappedPost() {
-        guard let url = URL(string: "https://jsonplaceholder.typicode.com/posts") else {return}
-        let parametres = ["username": "ivan", "message": "Hello, Steve!"]
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        guard let httpBody = try? JSONSerialization.data(withJSONObject: parametres, options: []) else { return }
-        request.httpBody = httpBody
+        let geoCoder = CLGeocoder()
+        let location = CLLocation(latitude: coord.0, longitude: coord.1)
         
-        
-        let session = URLSession.shared
-        session.dataTask(with: request) { (data, response, error) in
-            print(url)
-            if let response = response {
-                print(response)
+        geoCoder.reverseGeocodeLocation(location, completionHandler: { (placemarks, _) -> Void in
+            
+            placemarks?.forEach { (placemark) in
+                
+                if let city = placemark.locality {
+                    print(city)
+                    self.cityName = "\(city)"
+                    
+                }else{
+                    self.cityName = "?"
+                } // Prints "New York"
             }
-            guard let data = data else { return }
-            do{
-                let json = try JSONSerialization.jsonObject(with: data, options: [])
-                print(json)
-            }catch{
-                print(error)
-            }
-        }.resume()
+        })
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        addButtons()
-        addLabel()
-        configureButtons()
-        configureLabel()
         
+        addButton()
+        addLabel()
+        addMap()
+        
+        configureButtonGet()
+        configureLabel()
+        configureMap()
+        configureButtonWhereI()
         
         locationManager.requestAlwaysAuthorization()
         locationManager.requestWhenInUseAuthorization()
         if CLLocationManager.locationServicesEnabled() {
             locationManager.delegate = self
             locationManager.desiredAccuracy = kCLLocationAccuracyNearestTenMeters
-            locationManager.startUpdatingLocation()
         }
-        wheatherConditionLabel.text = "hello, friend!"
         
-        // Do any additional setup after loading the view.
+        let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        gestureRecognizer.delegate = self
+        mapView.addGestureRecognizer(gestureRecognizer)
+
     }
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let locValue: CLLocationCoordinate2D = manager.location?.coordinate else { return }
         print("locations = \(locValue.latitude) \(locValue.longitude)")
-        lat = "\(locValue.latitude)"
-        lon = "\(locValue.longitude)"
+    }
+    
+    @objc func tappedWhereI(){
+        if locationManager.accessibilityActivate(){
+        let center = CLLocationCoordinate2D(latitude: (locationManager.location?.coordinate.latitude)!, longitude: (locationManager.location?.coordinate.longitude)!)
+        let region = MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
+        self.mapView.setRegion(region, animated: true)
+        getLocale(coord: (locationManager.location!.coordinate.latitude, locationManager.location!.coordinate.longitude))
+        setDataOnLabel(coordinates: (locationManager.location!.coordinate.latitude, locationManager.location!.coordinate.longitude))
+            self.buttonGet.isEnabled = true}
+    }
+    
+    
+    @objc
+    func handleTap(gestureRecognizer: UILongPressGestureRecognizer) {
         
-        let geoCoder = CLGeocoder()
-        let location = CLLocation(latitude: locValue.latitude, longitude:  locValue.longitude) // <- New York
-
-        geoCoder.reverseGeocodeLocation(location, completionHandler: { (placemarks, _) -> Void in
-
-            placemarks?.forEach { (placemark) in
-
-                if let city = placemark.locality {
-                    print(city)
-                    self.cityName = city
-                    
-                } // Prints "New York"
-            }
-        })
+        let location = gestureRecognizer.location(in: mapView)
+        let coordinate = mapView.convert(location, toCoordinateFrom: mapView)
+        // Add annotation:
+        let annotation = MKPointAnnotation()
+        annotation.coordinate = coordinate
+        mapView.addAnnotation(annotation)
+        lat = coordinate.latitude
+        lon = coordinate.longitude
+        getLocale(coord: (lat, lon))
+        setDataOnLabel(coordinates: (lat, lon))
+        buttonGet.isEnabled = true
+        
+        
     }
 }
 
