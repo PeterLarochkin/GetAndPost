@@ -162,7 +162,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, UIGestureReco
             }
             DispatchQueue.main.async {
                 
-                self.wheatherConditionLabel.text  = "Город: \(self.cityName)" + "\nВремя: \(self.date)" + "\nТемпература: \(self.temp)"
+                self.wheatherConditionLabel.text  = "Место: \(self.cityName)" + "\nВремя: \(self.date)" + "\nТемпература: \(self.temp)"
                 //                print(self.wheatherCondition)
             }
         }
@@ -208,7 +208,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, UIGestureReco
                 self.wheatherConditionLabel.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width , height: 1 / 7 * UIScreen.main.bounds.height)
                 self.buttonWhereI.frame = CGRect(x: 0, y: 6 / 7 * UIScreen.main.bounds.height, width: UIScreen.main.bounds.width / 2, height: 1 / 7 * UIScreen.main.bounds.height)
                 self.buttonGet.frame = CGRect(x: UIScreen.main.bounds.width / 2, y: 6 / 7 * UIScreen.main.bounds.height, width: UIScreen.main.bounds.width / 2, height: 1 / 7 * UIScreen.main.bounds.height)
-                self.wheatherConditionLabel.text = "Город : \(self.cityName)" + "\n Время : \(self.date)" + "\n Температура : \(self.temp)"
+                self.wheatherConditionLabel.text = "Место : \(self.cityName)" + "\n Время : \(self.date)" + "\n Температура : \(self.temp)"
                 self.buttonGet.setTitle("Развернуть", for: .normal)
                 self.view.layoutIfNeeded()
             })
@@ -270,13 +270,18 @@ class ViewController: UIViewController, CLLocationManagerDelegate, UIGestureReco
     }
     
     @objc func tappedWhereI(){
-        if locationManager.accessibilityActivate(){
+        if CLLocationManager.locationServicesEnabled(){
         let center = CLLocationCoordinate2D(latitude: (locationManager.location?.coordinate.latitude)!, longitude: (locationManager.location?.coordinate.longitude)!)
         let region = MKCoordinateRegion(center: center, span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))
         self.mapView.setRegion(region, animated: true)
+        let annotation = MKPointAnnotation()
+        annotation.coordinate = locationManager.location?.coordinate as! CLLocationCoordinate2D
+        self.mapView.addAnnotation(annotation)
         getLocale(coord: (locationManager.location!.coordinate.latitude, locationManager.location!.coordinate.longitude))
         setDataOnLabel(coordinates: (locationManager.location!.coordinate.latitude, locationManager.location!.coordinate.longitude))
-            self.buttonGet.isEnabled = true}
+            self.buttonGet.isEnabled = true
+            
+        }
     }
     
     
